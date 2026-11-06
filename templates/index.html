@@ -1,11 +1,417 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>PetIA Shop - Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PetIA Shop · Dashboard de Inteligencia Artificial</title>
+  <meta name="description" content="Tienda de Mascotas Inteligente: clasificación, agrupación y asociación con Flask.">
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
 </head>
 <body>
-    <h1>Bienvenido a PetIA Shop</h1>
-    <p>El dashboard está en construcción...</p>
+
+<!-- ======================= ENCABEZADO ======================= -->
+<header class="topbar">
+  <button class="btn-menu" id="btn-menu" aria-label="Abrir menú"><i data-i="menu"></i></button>
+  <a class="marca" href="#inicio" aria-label="PetIA Shop, inicio">
+    <span class="marca-logo"><i data-i="huella"></i></span>
+    <span class="marca-texto">
+      <strong>PetIA <em>Shop</em></strong>
+      <small>Tienda de Mascotas Inteligente</small>
+    </span>
+  </a>
+  <div class="topbar-titulo">
+    <h1>Dashboard de Inteligencia Artificial</h1>
+    <p>Clasificación · Agrupación · Asociación</p>
+  </div>
+  <div class="topbar-mascotas" id="topbar-mascotas" aria-hidden="true">
+    <span class="huella h1"><i data-i="huella"></i></span>
+    <img data-raza="Labrador Retriever" alt="">
+    <img data-raza="Siamés" alt="">
+    <img data-raza="Periquito australiano" alt="">
+    <img data-raza="Tortuga rusa" alt="">
+    <span class="huella h2"><i data-i="huella"></i></span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ======================= MENÚ LATERAL ======================= -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="nav" aria-label="Secciones">
+      <a href="#inicio" data-vista="inicio"><i data-i="house"></i><span>Inicio</span></a>
+      <a href="#dataset" data-vista="dataset"><i data-i="database"></i><span>Dataset</span></a>
+      <a href="#entrenamiento" data-vista="entrenamiento"><i data-i="settings"></i><span>Entrenamiento</span></a>
+      <a href="#clasificacion" data-vista="clasificacion"><i data-i="wand-sparkles"></i><span>Clasificación</span></a>
+      <a href="#agrupacion" data-vista="agrupacion"><i data-i="network"></i><span>Agrupación<small>(K-means)</small></span></a>
+      <a href="#asociacion" data-vista="asociacion"><i data-i="workflow"></i><span>Asociación<small>(Apriori)</small></span></a>
+      <a href="#resultados" data-vista="resultados"><i data-i="chart-column"></i><span>Resultados</span></a>
+      <a href="#acerca" data-vista="acerca"><i data-i="info"></i><span>Acerca de</span></a>
+    </nav>
+    <div class="sidebar-estado">
+      <span class="punto" id="sb-punto"></span>
+      <div><small>Dataset en memoria</small><strong id="sb-total">—</strong></div>
+    </div>
+    <div class="sidebar-huellas" aria-hidden="true">
+      <i data-i="huella"></i><i data-i="huella"></i><i data-i="huella"></i>
+    </div>
+  </aside>
+  <div class="velo" id="velo"></div>
+
+  <main class="main">
+    <!-- ======================= INDICADORES ======================= -->
+    <section class="kpis" aria-label="Indicadores">
+      <article class="kpi">
+        <span class="kpi-ico azul"><i data-i="database"></i></span>
+        <div><h3>Dataset</h3><strong id="kpi-total" class="contador">—</strong><small>registros</small></div>
+      </article>
+      <article class="kpi">
+        <span class="kpi-ico naranja"><i data-i="huella"></i></span>
+        <div><h3>Clases (Tipo)</h3><strong id="kpi-tipos">—</strong><small id="kpi-tipos-txt">Perro · Gato · Ave · Tortuga</small></div>
+      </article>
+      <article class="kpi">
+        <span class="kpi-ico magenta"><i data-i="tag"></i></span>
+        <div><h3>Razas / Variedades</h3><strong id="kpi-razas">—</strong><small>en total</small></div>
+      </article>
+      <article class="kpi">
+        <span class="kpi-ico azul"><i data-i="sliders-horizontal"></i></span>
+        <div><h3>Características</h3><strong id="kpi-pred">—</strong><small>predictoras</small></div>
+      </article>
+      <article class="kpi kpi-estado">
+        <span class="kpi-ico verde" id="kpi-estado-ico"><i data-i="circle-check"></i></span>
+        <div><h3>Estado del modelo</h3><span class="pill" id="kpi-estado">Sin entrenar</span></div>
+      </article>
+    </section>
+
+    <!-- ======================= VISTAS (los paneles se colocan aquí) ======================= -->
+    <div class="vista-cabecera" id="vista-cabecera"><h2 id="vista-titulo"></h2><p id="vista-desc"></p></div>
+    <div id="vistas">
+      <section class="vista grid-inicio" data-vista="inicio">
+        <div class="slot a-ctrl" data-slot="controles"></div>
+        <div class="slot a-pred" data-slot="prediccion"></div>
+        <div class="slot a-train" data-slot="entrenamiento"></div>
+        <div class="slot a-matriz" data-slot="matriz"></div>
+        <div class="slot a-metr" data-slot="metricas"></div>
+        <div class="slot a-kmeans" data-slot="kmeans"></div>
+        <div class="slot a-apriori" data-slot="apriori"></div>
+      </section>
+      <section class="vista grid-dataset" data-vista="dataset">
+        <div class="slot a-ctrl" data-slot="controles"></div>
+        <div class="slot a-carga" data-slot="carga"></div>
+        <div class="slot a-inf" data-slot="informe"></div>
+        <div class="slot a-tabla" data-slot="tabla"></div>
+        <div class="slot ancho" data-slot="graficas"></div>
+        <div class="slot ancho" data-slot="diccionario"></div>
+      </section>
+      <section class="vista grid-dos" data-vista="entrenamiento">
+        <div class="slot ancho" data-slot="entrenamiento"></div>
+        <div class="slot" data-slot="metricas"></div>
+        <div class="slot" data-slot="matriz"></div>
+      </section>
+      <section class="vista grid-clasif" data-vista="clasificacion">
+        <div class="slot a-ctrl" data-slot="controles"></div>
+        <div class="slot" data-slot="prediccion"></div>
+      </section>
+      <section class="vista grid-dos" data-vista="agrupacion">
+        <div class="slot ancho" data-slot="kmeans"></div>
+      </section>
+      <section class="vista grid-dos" data-vista="asociacion">
+        <div class="slot ancho" data-slot="apriori"></div>
+      </section>
+      <section class="vista grid-dos" data-vista="resultados">
+        <div class="slot" data-slot="metricas"></div>
+        <div class="slot" data-slot="matriz"></div>
+        <div class="slot ancho" data-slot="entrenamiento"></div>
+      </section>
+      <section class="vista grid-dos" data-vista="acerca">
+        <div class="slot ancho" data-slot="acerca"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- =====================================================================
+     ALMACÉN DE PANELES: cada panel existe UNA vez y se mueve a la vista activa
+     ===================================================================== -->
+<div id="almacen" hidden>
+
+  <!-- ---------- CONTROLES Y DATOS (selector + 5 rasgos + botones) ---------- -->
+  <article class="card" data-card="controles">
+    <header class="card-head"><h2>Controles y datos</h2></header>
+    <form id="form-mascota" novalidate autocomplete="off">
+      <label class="campo">
+        <span>Tipo de mascota</span>
+        <div class="select-ico"><i data-i="huella" id="ico-tipo"></i>
+          <select id="sel-tipo" name="tipo" required></select></div>
+        <small class="err" data-err="tipo"></small>
+      </label>
+      <label class="campo">
+        <span>Raza / variedad</span>
+        <select id="sel-raza" name="raza" required></select>
+        <small class="err" data-err="raza"></small>
+      </label>
+      <button type="button" class="link-btn" id="btn-autocompletar"><i data-i="sparkles"></i> Autocompletar con valores típicos de la raza</button>
+
+      <fieldset class="rasgos">
+        <legend>Cinco características (rasgos)</legend>
+        <label class="rasgo"><i data-i="weight"></i><span>Peso (kg)</span>
+          <input type="number" name="peso_kg" id="in-peso" step="0.001" min="0.01" max="120" inputmode="decimal" required></label>
+        <small class="err" data-err="peso_kg"></small>
+        <label class="rasgo"><i data-i="ruler"></i><span>Altura (cm)</span>
+          <input type="number" name="altura_cm" id="in-altura" step="0.1" min="3" max="100" inputmode="decimal" required></label>
+        <small class="err" data-err="altura_cm"></small>
+        <label class="rasgo"><i data-i="calendar"></i><span>Edad (años)</span>
+          <input type="number" name="edad_anios" id="in-edad" step="1" min="0" max="80" inputmode="numeric" required></label>
+        <small class="err" data-err="edad_anios"></small>
+        <label class="rasgo"><i data-i="activity"></i><span>Nivel de actividad</span>
+          <select name="nivel_actividad" id="in-actividad" required></select></label>
+        <small class="err" data-err="nivel_actividad"></small>
+        <label class="rasgo"><i data-i="waves"></i><span>Tipo de pelaje</span>
+          <select name="tipo_pelaje" id="in-pelaje" required></select></label>
+        <small class="err" data-err="tipo_pelaje"></small>
+      </fieldset>
+
+      <div class="acciones">
+        <button type="submit" class="btn btn-suave" id="btn-anadir"><i data-i="plus"></i> Añadir registro al dataset</button>
+        <button type="button" class="btn btn-gris" id="btn-cargar"><i data-i="upload"></i> <span>Cargar CSV (<span id="lbl-total-csv">500,000</span>)</span></button>
+        <button type="button" class="btn btn-verde" data-accion="entrenar"><i data-i="refresh-cw"></i> Reentrenar modelos</button>
+        <button type="button" class="btn btn-azul" data-accion="clasificar"><i data-i="search"></i> Clasificar</button>
+        <button type="button" class="btn btn-morado" data-accion="agrupar"><i data-i="network"></i> Agrupar (K-means)</button>
+        <button type="button" class="btn btn-naranja" data-accion="asociar"><i data-i="workflow"></i> Asociar (Apriori)</button>
+      </div>
+    </form>
+  </article>
+
+  <!-- ---------- PREDICCIÓN ---------- -->
+  <article class="card" data-card="prediccion">
+    <header class="card-head"><h2><i data-i="target" class="ico-titulo"></i> Predicción de mascota (Clasificación)</h2></header>
+    <div class="pred">
+      <figure class="pred-foto" id="pred-figura">
+        <img id="pred-img" alt="Fotografía de la raza seleccionada">
+        <figcaption id="pred-cap"><span class="chip" id="pred-chip">Vista previa</span> <span id="pred-cap-raza"></span></figcaption>
+      </figure>
+      <div class="pred-info">
+        <div class="pred-resultado" id="pred-resultado">
+          <h4>Resultado de la predicción</h4>
+          <div class="pred-pares">
+            <div><i data-i="huella"></i><span>Tipo:<strong id="pred-tipo">—</strong></span></div>
+            <div><i data-i="tag"></i><span>Raza:<strong id="pred-raza">—</strong></span></div>
+          </div>
+          <small id="pred-modelo" class="muted">Ingresa los cinco rasgos y presiona <b>Clasificar</b>.</small>
+        </div>
+        <h4>Probabilidades por tipo de mascota</h4>
+        <ul class="barras" id="prob-tipo"></ul>
+        <h4 class="mt">Probabilidades de raza (top 3)</h4>
+        <ul class="barras" id="prob-raza"><li class="vacio">Sin predicción todavía</li></ul>
+      </div>
+    </div>
+  </article>
+
+  <!-- ---------- CONFIGURACIÓN DEL ENTRENAMIENTO ---------- -->
+  <article class="card" data-card="entrenamiento">
+    <header class="card-head"><h2><i data-i="settings" class="ico-titulo"></i> Configuración del entrenamiento</h2>
+      <button class="btn btn-verde btn-chico solo-vista" data-accion="entrenar"><i data-i="refresh-cw"></i> Reentrenar</button></header>
+    <div class="division">
+      <h4>División del dataset (sin fugas)</h4>
+      <div class="split">
+        <div class="split-train"><b>75 %</b><small>Entrenamiento<br>(<span id="n-train">—</span>)</small></div>
+        <div class="split-val"><b>15 %</b><small>Validación<br>(<span id="n-val">—</span>)</small></div>
+        <div class="split-test"><b>10 %</b><small>Prueba<br>(<span id="n-test">—</span>)</small></div>
+      </div>
+      <ul class="reglas-fuga">
+        <li><i data-i="shield-check"></i> Transformaciones ajustadas solo con <b>TRAIN</b></li>
+        <li><i data-i="list-checks"></i> Modelo elegido con <b>VALIDACIÓN</b></li>
+        <li><i data-i="target"></i> <b>PRUEBA</b> reservada para la evaluación final</li>
+      </ul>
+    </div>
+    <h4>Algoritmos comparados <small class="muted" id="tabla-algo-nota">(métricas en validación)</small></h4>
+    <div class="tabla-scroll">
+      <table class="tabla tabla-algos" id="tabla-algos">
+        <thead><tr><th>Algoritmo</th><th>Accuracy</th><th>Error<small>total</small></th><th>FPR<small>(macro)</small></th><th>FNR<small>(macro)</small></th><th>F1<small>(macro)</small></th></tr></thead>
+        <tbody>
+          <tr data-modelo="GaussianNB"><td>GaussianNB</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr data-modelo="Árbol de Decisión"><td>Árbol de Decisión</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr data-modelo="Random Forest"><td>Random Forest</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted nota-estado" id="train-nota">Presiona <b>Reentrenar modelos</b> para calcular las métricas reales.</p>
+  </article>
+
+  <!-- ---------- MATRIZ DE CONFUSIÓN ---------- -->
+  <article class="card" data-card="matriz">
+    <header class="card-head"><h2><i data-i="target" class="ico-titulo"></i> Matriz de confusión <span id="matriz-modelo"></span></h2>
+      <div class="segmentado" id="matriz-nivel" role="tablist">
+        <button class="activo" data-nivel="tipo">Tipo</button><button data-nivel="raza">Raza</button></div></header>
+    <div class="matriz-wrap" id="matriz-wrap">
+      <div class="vacio-grande"><i data-i="table"></i><p>La matriz se genera con el conjunto de <b>prueba</b> al reentrenar.</p></div>
+    </div>
+  </article>
+
+  <!-- ---------- MÉTRICAS ---------- -->
+  <article class="card" data-card="metricas">
+    <header class="card-head"><h2><i data-i="chart-column" class="ico-titulo"></i> Métricas de evaluación (en prueba)</h2></header>
+    <div class="grafica-caja"><canvas id="graf-metricas" aria-label="Métricas de evaluación"></canvas>
+      <div class="vacio-grande capa" id="metricas-vacio"><i data-i="chart-column"></i><p>Sin métricas todavía.</p></div></div>
+    <p class="interpretacion" id="metricas-texto"></p>
+  </article>
+
+  <!-- ---------- K-MEANS ---------- -->
+  <article class="card" data-card="kmeans">
+    <header class="card-head"><h2><i data-i="network" class="ico-titulo"></i> <span>Agrupación de mascotas (K-means, K = <span id="k-label">4</span>)</span></h2>
+      <div class="controles-linea">
+        <label>K <input type="range" id="in-k" min="2" max="8" value="4"></label>
+        <button class="btn btn-morado btn-chico" data-accion="agrupar"><i data-i="network"></i> Agrupar</button>
+      </div></header>
+    <div class="grafica-caja alta"><canvas id="graf-kmeans" aria-label="Gráfica de grupos K-means"></canvas>
+      <div class="vacio-grande capa" id="kmeans-vacio"><i data-i="network"></i><p>K-means agrupa <b>sin usar las etiquetas</b>. Presiona <b>Agrupar</b>.</p></div></div>
+    <ul class="interpretacion lista" id="kmeans-texto"></ul>
+  </article>
+
+  <!-- ---------- APRIORI ---------- -->
+  <article class="card" data-card="apriori">
+    <header class="card-head"><h2><i data-i="workflow" class="ico-titulo"></i> Reglas de asociación (Apriori)</h2>
+      <div class="controles-linea">
+        <label>Soporte ≥ <output id="out-sop">0.05</output><input type="range" id="in-soporte" min="0.01" max="0.30" step="0.01" value="0.05"></label>
+        <label>Confianza ≥ <output id="out-conf">0.80</output><input type="range" id="in-confianza" min="0.30" max="1" step="0.05" value="0.8"></label>
+        <button class="btn btn-naranja btn-chico" data-accion="asociar"><i data-i="workflow"></i> Asociar</button>
+      </div></header>
+    <div class="tabla-scroll">
+      <table class="tabla tabla-reglas" id="tabla-reglas">
+        <thead><tr><th>Regla (Si ocurre … → Entonces …)</th><th>Soporte</th><th>Confianza</th><th>Lift</th></tr></thead>
+        <tbody><tr class="fila-vacia"><td colspan="4">Presiona <b>Asociar (Apriori)</b> para descubrir reglas.</td></tr></tbody>
+      </table>
+    </div>
+    <p class="interpretacion" id="apriori-texto"></p>
+  </article>
+
+  <!-- ---------- CARGA DE CSV ---------- -->
+  <article class="card" data-card="carga" id="card-carga">
+    <header class="card-head"><h2><i data-i="cloud-upload" class="ico-titulo"></i> Cargar archivo CSV</h2></header>
+    <form id="form-csv">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="in-csv" accept=".csv,text/csv" hidden>
+        <i data-i="file-spreadsheet"></i>
+        <strong id="drop-nombre">Arrastra tu CSV aquí o haz clic para elegirlo</strong>
+        <small>Columnas: peso_kg, altura_cm, edad_anios, nivel_actividad, tipo_pelaje, tipo, raza</small>
+      </label>
+      <div class="modo">
+        <label><input type="radio" name="modo" value="anexar" checked> <span><b>Anexar</b> al dataset actual</span></label>
+        <label><input type="radio" name="modo" value="reemplazar"> <span><b>Reemplazar</b> el dataset completo</span></label>
+      </div>
+      <div class="progreso" id="progreso" hidden><div class="progreso-barra" id="progreso-barra"></div><span id="progreso-txt">0 %</span></div>
+      <div class="acciones-linea">
+        <button type="submit" class="btn btn-azul" id="btn-subir" disabled><i data-i="shield-check"></i> Validar y cargar</button>
+        <a class="btn btn-gris" href="/api/dataset/plantilla"><i data-i="download"></i> Plantilla</a>
+        <a class="btn btn-gris" href="/api/dataset/descargar"><i data-i="download"></i> Dataset</a>
+      </div>
+    </form>
+  </article>
+
+  <!-- ---------- INFORME DE VALIDACIÓN ---------- -->
+  <article class="card" data-card="informe">
+    <header class="card-head"><h2><i data-i="list-checks" class="ico-titulo"></i> Informe de validación</h2><span class="pill gris" id="inf-estado">Sin cargas</span></header>
+    <div class="inf-numeros">
+      <div><small>Leídas</small><strong id="inf-leidas">—</strong></div>
+      <div class="ok"><small>Válidas</small><strong id="inf-validas">—</strong></div>
+      <div class="mal"><small>Rechazadas</small><strong id="inf-rech">—</strong></div>
+      <div><small>Normalizadas</small><strong id="inf-norm">—</strong></div>
+    </div>
+    <div id="inf-resumen" class="chips"></div>
+    <div class="tabla-scroll corta">
+      <table class="tabla" id="tabla-errores">
+        <thead><tr><th>Fila</th><th>Columna</th><th>Valor</th><th>Motivo</th></tr></thead>
+        <tbody><tr class="fila-vacia"><td colspan="4">Aquí aparecerán los errores encontrados al cargar un CSV.</td></tr></tbody>
+      </table>
+    </div>
+    <ul class="checks" id="inf-checks"></ul>
+  </article>
+
+  <!-- ---------- TABLA DEL DATASET ---------- -->
+  <article class="card" data-card="tabla">
+    <header class="card-head"><h2><i data-i="table" class="ico-titulo"></i> Registros del dataset <span class="pill azul" id="tabla-total">—</span></h2>
+      <div class="filtros">
+        <select id="f-tipo" aria-label="Filtrar por tipo"><option value="">Todos los tipos</option></select>
+        <select id="f-raza" aria-label="Filtrar por raza"><option value="">Todas las razas</option></select>
+        <div class="buscar"><i data-i="search"></i><input type="search" id="f-buscar" placeholder="Buscar id o raza"></div>
+        <select id="f-por" aria-label="Filas por página"><option>10</option><option selected>15</option><option>25</option><option>50</option></select>
+      </div></header>
+    <div class="tabla-scroll">
+      <table class="tabla tabla-datos" id="tabla-datos">
+        <thead><tr>
+          <th data-orden="id">ID</th><th data-orden="peso_kg">Peso (kg)</th><th data-orden="altura_cm">Altura (cm)</th>
+          <th data-orden="edad_anios">Edad</th><th data-orden="nivel_actividad">Actividad</th><th data-orden="tipo_pelaje">Pelaje</th>
+          <th data-orden="tipo">Tipo</th><th data-orden="raza">Raza</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="paginacion">
+      <span id="pag-info">—</span>
+      <div><button class="btn-ico" id="pag-prev" aria-label="Página anterior"><i data-i="chevron-left"></i></button>
+        <span id="pag-num">1 / 1</span>
+        <button class="btn-ico" id="pag-next" aria-label="Página siguiente"><i data-i="chevron-right"></i></button></div>
+    </div>
+  </article>
+
+  <!-- ---------- GRÁFICAS DEL DATASET ---------- -->
+  <article class="card" data-card="graficas">
+    <header class="card-head"><h2><i data-i="chart-pie" class="ico-titulo"></i> Exploración del dataset</h2></header>
+    <div class="graficas-dataset">
+      <div><h4>Registros por tipo</h4><div class="grafica-caja"><canvas id="graf-tipos"></canvas></div></div>
+      <div class="doble"><h4>Registros por raza / variedad</h4><div class="grafica-caja alta"><canvas id="graf-razas"></canvas></div></div>
+      <div><h4>Promedio de rasgos por tipo</h4>
+        <div class="tabla-scroll"><table class="tabla" id="tabla-medias"><thead><tr><th>Tipo</th><th>Peso (kg)</th><th>Altura (cm)</th><th>Edad (años)</th></tr></thead><tbody></tbody></table></div>
+        <h4 class="mt">Estadística descriptiva</h4>
+        <div class="tabla-scroll"><table class="tabla" id="tabla-desc"><thead><tr><th>Rasgo</th><th>Mín</th><th>Media</th><th>Mediana</th><th>Máx</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ---------- DICCIONARIO DE DATOS ---------- -->
+  <article class="card" data-card="diccionario">
+    <header class="card-head"><h2><i data-i="file-text" class="ico-titulo"></i> Diccionario de datos y controles de calidad</h2></header>
+    <div class="dicc">
+      <div class="tabla-scroll"><table class="tabla" id="tabla-dicc"><thead><tr><th>Columna</th><th>Rol</th><th>Tipo</th><th>Dominio</th><th>Descripción</th></tr></thead><tbody></tbody></table></div>
+      <div class="calidad">
+        <h4>Controles de calidad del dataset original</h4>
+        <ul class="checks" id="calidad-checks"></ul>
+      </div>
+    </div>
+  </article>
+
+  <!-- ---------- ACERCA DE ---------- -->
+  <article class="card" data-card="acerca">
+    <header class="card-head"><h2><i data-i="info" class="ico-titulo"></i> Acerca de PetIA Shop</h2></header>
+    <div class="acerca">
+      <div>
+        <p class="lead">Dashboard web inteligente para una tienda de mascotas: clasifica el <b>tipo</b> y la <b>raza</b> a partir de cinco rasgos, descubre perfiles con <b>K-means</b> y reglas con <b>Apriori</b>.</p>
+        <dl class="ficha">
+          <dt>Institución</dt><dd>Tecnológico de Estudios Superiores de Jocotitlán (TESJo)</dd>
+          <dt>Carrera</dt><dd>Ingeniería en Sistemas Computacionales</dd>
+          <dt>Asignatura</dt><dd>Aprendizaje Automático · Unidad III</dd>
+          <dt>Docente</dt><dd>Dr. en C.I. Juan Alberto Antonio Velázquez</dd>
+          <dt>Tecnologías</dt><dd>Python · Flask · pandas · scikit-learn · HTML · CSS · JavaScript · Chart.js</dd>
+        </dl>
+      </div>
+      <div>
+        <h4>Equipo</h4>
+        <ul class="equipo">
+          <li><span class="av azul">1</span><div><b>Integrante 1</b><small>Datos y diseño · dataset, dashboard, carga y validación</small></div></li>
+          <li><span class="av verde">2</span><div><b>Integrante 2</b><small>Clasificación · Flask ML, 75/15/10, 3 clasificadores</small></div></li>
+          <li><span class="av morado">3</span><div><b>Integrante 3</b><small>Métricas · matriz, K-means, Apriori</small></div></li>
+          <li><span class="av naranja">4</span><div><b>Integrante 4</b><small>Documentación, integración y pruebas</small></div></li>
+        </ul>
+      </div>
+    </div>
+  </article>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='vendor/iconos.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
