@@ -1,0 +1,1 @@
+Coloca aquí una foto por raza con el nombre <slug>.jpg (p. ej. labrador-retriever.jpg) o ejecuta scripts/descargar_imagenes.py
