@@ -80,6 +80,7 @@
     ultimaPrediccion: null,
     matrices: null,
     nivelMatriz: "tipo",
+    resultadosEntrenamiento: null,
   };
 
   // =====================================================================
@@ -112,7 +113,10 @@
     document.body.classList.remove("menu-abierto");
     // las gráficas se reacomodan al cambiar de contenedor
     requestAnimationFrame(() => Object.values(S.graficas).forEach((g) => g && g.resize()));
-    if (S.matrices) pintarMatriz();
+    // Repintar SIEMPRE los resultados del objetivo seleccionado al cambiar de vista
+    if (S.resultadosEntrenamiento) {
+      pintarResultadosNivel();
+    }
     if (vista === "dataset") cargarTabla();
   }
 
@@ -592,7 +596,7 @@
     entrenar: { url: "/api/entrenar", cuerpo: () => ({}), pintar: pintarEntrenamiento, ok: "Modelos reentrenados", vista: "entrenamiento" },
     clasificar: { url: "/api/clasificar", cuerpo: datosClasificar, pintar: pintarPrediccion, ok: "Clasificación lista" },
     agrupar: { url: "/api/agrupar", cuerpo: () => ({ k: +$("#in-k").value }), pintar: pintarKmeans, ok: "Agrupación lista" },
-    asociar: { url: "/api/asociar", cuerpo: () => ({ soporte_min: +$("#in-soporte").value, confianza_min: +$("#in-confianza").value }), pintar: pintarApriori, ok: "Reglas generadas" },
+    asociar: { url: "/api/asociar", cuerpo: () => ({  min_support: +$("#in-soporte").value,   min_confidence: +$("#in-confianza").value  }), pintar: pintarApriori,  ok: "Reglas generadas"},
   };
 
   function datosClasificar() {
@@ -623,21 +627,89 @@
   }
 
   function pintarEntrenamiento(d) {
-    if (d.division) {
-      S.division = d.division;
-      $("#n-train").textContent = fmt(d.division.train); $("#n-val").textContent = fmt(d.division.val); $("#n-test").textContent = fmt(d.division.test);
-    }
-    const filas = $$("#tabla-algos tbody tr");
-    (d.modelos || []).forEach((m) => {
-      let tr = filas.find((f) => f.dataset.modelo === m.nombre);
-      if (!tr) { tr = document.createElement("tr"); tr.dataset.modelo = m.nombre; $("#tabla-algos tbody").appendChild(tr); }
-      tr.innerHTML = `<td>${esc(m.nombre)}</td><td>${f3(m.accuracy)}</td><td>${f3(m.error_total)}</td><td>${f3(m.fpr_macro)}</td><td>${f3(m.fnr_macro)}</td><td>${f3(m.f1_macro)}</td>`;
-      tr.classList.toggle("mejor", m.nombre === d.mejor);
-    });
-    $("#train-nota").innerHTML = `Mejor modelo según <b>validación</b>: <b>${esc(d.mejor || "—")}</b>. Evaluado al final en <b>prueba</b> (${fmt(d.division?.test || 0)} registros).`
-      + (d.entrenado_en ? ` · ${esc(new Date(d.entrenado_en).toLocaleString("es-MX"))}` : "");
-    if (d.test) pintarMetricas(d.test, d.mejor, d.interpretacion);
-    if (d.matrices) { S.matrices = d.matrices; $("#matriz-modelo").textContent = d.mejor ? `(${d.mejor})` : ""; pintarMatriz(); }
+      // Guardar toda la respuesta para poder alternar entre Tipo y Raza.
+      S.resultadosEntrenamiento = d;
+
+      if (d.division) {
+          S.division = d.division;
+          $("#n-train").textContent = fmt(d.division.train);
+          $("#n-val").textContent = fmt(d.division.val);
+          $("#n-test").textContent = fmt(d.division.test);
+      }
+
+      // Guardar las dos matrices de confusión.
+      if (d.matrices) {
+          S.matrices = d.matrices;
+      }
+
+      // Mostrar los resultados correspondientes al objetivo seleccionado.
+      pintarResultadosNivel();
+
+      // Actualizar el estado general del entrenamiento.
+      $("#train-nota").innerHTML =
+          `Modelos entrenados para clasificación por tipo y raza. ` +
+          `La selección se realiza mediante <b>validación</b> y la evaluación final utiliza <b>prueba</b> (${fmt(d.division?.test || 0)} registros).` +
+          (d.entrenado_en
+              ? ` · ${esc(new Date(d.entrenado_en).toLocaleString("es-MX"))}`
+              : "");
+  }
+
+  function pintarResultadosNivel() {
+      const d = S.resultadosEntrenamiento;
+      if (!d) return;
+
+      const nivel = S.nivelMatriz;
+      const esRaza = nivel === "raza";
+
+      const modelos = esRaza
+          ? (d.modelos_raza || [])
+          : (d.modelos || []);
+
+      const mejor = esRaza
+          ? d.mejor_raza
+          : d.mejor;
+
+      const metricas = esRaza
+          ? d.test_raza
+          : d.test;
+
+      // Actualizar la tabla de algoritmos.
+      const tbody = $("#tabla-algos tbody");
+
+      tbody.innerHTML = modelos.map((m) => `
+          <tr class="${m.nombre === mejor ? "mejor" : ""}"
+              data-modelo="${esc(m.nombre)}">
+              <td>${esc(m.nombre)}</td>
+              <td>${f3(m.accuracy)}</td>
+              <td>${f3(m.error_total)}</td>
+              <td>${f3(m.fpr_macro)}</td>
+              <td>${f3(m.fnr_macro)}</td>
+              <td>${f3(m.f1_macro)}</td>
+          </tr>
+      `).join("");
+
+      // Identificar el objetivo de la comparación.
+      $("#tabla-algo-nota").textContent = esRaza
+          ? "(clasificación de razas · métricas en prueba)"
+          : "(clasificación de tipos · métricas en prueba)";
+
+      // Mostrar el mejor modelo seleccionado.
+      $("#train-nota").innerHTML =
+          `Objetivo: <b>${esRaza ? "Clasificación por raza" : "Clasificación por tipo"}</b>. ` +
+          `Mejor modelo según <b>validación</b>: <b>${esc(mejor || "—")}</b>.`;
+
+      // Actualizar el nombre del modelo en la tarjeta de la matriz.
+      $("#matriz-modelo").textContent = mejor
+          ? `(${mejor})`
+          : "";
+
+      // Actualizar las métricas del objetivo seleccionado.
+      if (metricas) {
+          pintarMetricas(metricas, mejor, null);
+      }
+
+      // Actualizar la matriz correspondiente.
+      pintarMatriz();
   }
 
   function pintarMetricas(t, modelo, texto) {
@@ -663,22 +735,65 @@
   }
 
   function pintarMatriz() {
-    const m = S.matrices?.[S.nivelMatriz] || S.matrices?.tipo;
-    if (!m) return;
-    const max = Math.max(...m.valores.flat());
+    const m = S.matrices?.[S.nivelMatriz];
+
+    if (!m || !Array.isArray(m.valores) || !Array.isArray(m.etiquetas)) {
+      $("#matriz-wrap").innerHTML = `
+          <div class="vacio-grande">
+              ${icono("table")}
+              <p>No hay una matriz disponible para este objetivo. Reentrena los modelos.</p>
+          </div>`;
+      return;
+    }
+
+    const max = Math.max(0, ...m.valores.flat());
     const comp = m.etiquetas.length > 6;
     const corta = (s) => (comp ? s.split(" ")[0].slice(0, 9) : s);
-    let h = `<table class="matriz ${comp ? "compacta" : ""}"><tr><th></th><th></th>${m.etiquetas.map((e) => `<th title="${esc(e)}">${esc(corta(e))}</th>`).join("")}</tr>`;
+
+    let h = `<table class="matriz ${comp ? "compacta" : ""}">
+        <tr>
+            <th></th>
+            <th></th>
+            ${m.etiquetas.map((e) =>
+                `<th title="${esc(e)}">${esc(corta(e))}</th>`
+            ).join("")}
+        </tr>`;
+
     m.valores.forEach((fila, i) => {
-      h += `<tr>${i === 0 ? `<th rowspan="${m.etiquetas.length}" class="eje-y">Clase real</th>` : ""}<th style="text-align:right" title="${esc(m.etiquetas[i])}">${esc(corta(m.etiquetas[i]))}</th>`;
-      fila.forEach((v, j) => {
-        const k = max ? v / max : 0;
-        const fondo = i === j ? `rgba(21,94,214,${0.35 + 0.65 * k})` : `rgba(31,111,235,${Math.min(0.35, 0.05 + k * 2)})`;
-        h += `<td style="background:${fondo};color:${i === j && k > 0.3 ? "#fff" : "#0f1f3a"}" title="Real: ${esc(m.etiquetas[i])} · Predicha: ${esc(m.etiquetas[j])}">${fmt(v)}</td>`;
-      });
-      h += "</tr>";
+        h += `<tr>
+            ${i === 0
+                ? `<th rowspan="${m.etiquetas.length}" class="eje-y">Clase real</th>`
+                : ""}
+            <th style="text-align:right"
+                title="${esc(m.etiquetas[i])}">
+                ${esc(corta(m.etiquetas[i]))}
+            </th>`;
+
+        fila.forEach((v, j) => {
+            const k = max ? v / max : 0;
+
+            const fondo = i === j
+                ? `rgba(21,94,214,${0.35 + 0.65 * k})`
+                : `rgba(31,111,235,${Math.min(0.35, 0.05 + k * 2)})`;
+
+            h += `<td
+                style="background:${fondo};color:${i === j && k > 0.3 ? "#fff" : "#0f1f3a"}"
+                title="Real: ${esc(m.etiquetas[i])} · Predicha: ${esc(m.etiquetas[j])}">
+                ${fmt(v)}
+            </td>`;
+        });
+
+        h += "</tr>";
     });
-    h += `<tr><td></td><td></td><td colspan="${m.etiquetas.length}" class="eje-x" style="text-align:center">Clase predicha</td></tr></table>`;
+
+    h += `<tr>
+        <td></td>
+        <td></td>
+        <td colspan="${m.etiquetas.length}" class="eje-x" style="text-align:center">
+            Clase predicha
+        </td>
+    </tr></table>`;
+
     $("#matriz-wrap").innerHTML = h;
   }
 
@@ -745,10 +860,41 @@
     $("#in-k").addEventListener("input", () => ($("#k-label").textContent = $("#in-k").value));
     $("#in-soporte").addEventListener("input", () => ($("#out-sop").textContent = Number($("#in-soporte").value).toFixed(2)));
     $("#in-confianza").addEventListener("input", () => ($("#out-conf").textContent = Number($("#in-confianza").value).toFixed(2)));
-    $$("#matriz-nivel button").forEach((b) => b.addEventListener("click", () => {
-      $$("#matriz-nivel button").forEach((x) => x.classList.toggle("activo", x === b));
-      S.nivelMatriz = b.dataset.nivel; pintarMatriz();
-    }));
+
+    // --- Selector de nivel de la matriz (Tipo / Raza) ---
+    // Al cambiar de nivel se debe repintar TODO: tabla de algoritmos, métricas y matriz.
+    $$("#matriz-nivel button").forEach((b) => {
+        b.addEventListener("click", () => {
+            $$("#matriz-nivel button").forEach((x) => {
+                x.classList.toggle("activo", x === b);
+            });
+
+            S.nivelMatriz = b.dataset.nivel;
+
+            // Sincronizar el selector de objetivos del entrenamiento.
+            const selector = $("#entrenamiento-objetivo");
+            if (selector) selector.value = S.nivelMatriz;
+
+            pintarResultadosNivel();
+        });
+    });
+
+    // --- Selector de objetivo del entrenamiento ---
+    // Mantiene sincronizados ambos controles (Tipo/Raza).
+    const selectorObjetivo = $("#entrenamiento-objetivo");
+
+    if (selectorObjetivo) {
+        selectorObjetivo.addEventListener("change", () => {
+            S.nivelMatriz = selectorObjetivo.value;
+
+            $$("#matriz-nivel button").forEach((b) => {
+                b.classList.toggle("activo", b.dataset.nivel === S.nivelMatriz);
+            });
+
+            pintarResultadosNivel();
+        });
+    }
+
     // al cambiar los rasgos, la predicción anterior deja de ser válida
     F.form().addEventListener("input", () => { if (S.ultimaPrediccion) { S.ultimaPrediccion = null; $("#pred-resultado").classList.remove("activo"); vistaPrevia(); } });
     F.form().addEventListener("change", (e) => { if (S.ultimaPrediccion && ["tipo", "raza"].includes(e.target.name)) { S.ultimaPrediccion = null; vistaPrevia(); } });

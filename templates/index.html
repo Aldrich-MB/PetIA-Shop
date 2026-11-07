@@ -211,8 +211,21 @@
 
   <!-- ---------- CONFIGURACIÓN DEL ENTRENAMIENTO ---------- -->
   <article class="card" data-card="entrenamiento">
-    <header class="card-head"><h2><i data-i="settings" class="ico-titulo"></i> Configuración del entrenamiento</h2>
-      <button class="btn btn-verde btn-chico solo-vista" data-accion="entrenar"><i data-i="refresh-cw"></i> Reentrenar</button></header>
+    <header class="card-head">
+      <h2>
+        <i data-i="settings" class="ico-titulo"></i>
+        Configuración del entrenamiento
+      </h2>
+
+      <div class="controles-linea">
+        <select id="entrenamiento-objetivo">
+          <option value="tipo">Clasificación por tipo</option>
+          <option value="raza">Clasificación por raza</option>
+        </select>
+
+        <button class="btn btn-verde btn-chico solo-vista" data-accion="entrenar"><i data-i="refresh-cw"></i> Reentrenar</button>
+      </div>
+    </header>
     <div class="division">
       <h4>División del dataset (sin fugas)</h4>
       <div class="split">
@@ -226,7 +239,7 @@
         <li><i data-i="target"></i> <b>PRUEBA</b> reservada para la evaluación final</li>
       </ul>
     </div>
-    <h4>Algoritmos comparados <small class="muted" id="tabla-algo-nota">(métricas en validación)</small></h4>
+    <h4>Algoritmos comparados <small class="muted" id="tabla-algo-nota">(métricas en prueba)</small></h4>
     <div class="tabla-scroll">
       <table class="tabla tabla-algos" id="tabla-algos">
         <thead><tr><th>Algoritmo</th><th>Accuracy</th><th>Error<small>total</small></th><th>FPR<small>(macro)</small></th><th>FNR<small>(macro)</small></th><th>F1<small>(macro)</small></th></tr></thead>
@@ -260,9 +273,9 @@
 
   <!-- ---------- K-MEANS ---------- -->
   <article class="card" data-card="kmeans">
-    <header class="card-head"><h2><i data-i="network" class="ico-titulo"></i> <span>Agrupación de mascotas (K-means, K = <span id="k-label">4</span>)</span></h2>
+    <header class="card-head"><h2><i data-i="network" class="ico-titulo"></i> <span>Agrupación de mascotas (K-means, K = <span id="k-label">3</span>)</span></h2>
       <div class="controles-linea">
-        <label>K <input type="range" id="in-k" min="2" max="8" value="4"></label>
+        <label>K <input type="range" id="in-k" min="2" max="8" value="3"></label>
         <button class="btn btn-morado btn-chico" data-accion="agrupar"><i data-i="network"></i> Agrupar</button>
       </div></header>
     <div class="grafica-caja alta"><canvas id="graf-kmeans" aria-label="Gráfica de grupos K-means"></canvas>
@@ -275,7 +288,7 @@
     <header class="card-head"><h2><i data-i="workflow" class="ico-titulo"></i> Reglas de asociación (Apriori)</h2>
       <div class="controles-linea">
         <label>Soporte ≥ <output id="out-sop">0.05</output><input type="range" id="in-soporte" min="0.01" max="0.30" step="0.01" value="0.05"></label>
-        <label>Confianza ≥ <output id="out-conf">0.80</output><input type="range" id="in-confianza" min="0.30" max="1" step="0.05" value="0.8"></label>
+        <label>Confianza ≥ <output id="out-conf">0.50</output><input type="range" id="in-confianza" min="0.05" max="1" step="0.05" value="0.5"></label>
         <button class="btn btn-naranja btn-chico" data-accion="asociar"><i data-i="workflow"></i> Asociar</button>
       </div></header>
     <div class="tabla-scroll">
